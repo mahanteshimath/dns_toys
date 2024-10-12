@@ -1,193 +1,110 @@
 import streamlit as st
-import subprocess
+import requests
 
-# Function to run a dig command and return the output
-def run_dig(query):
+# Function to query the dns.toys API
+def query_dns(query):
+    url = f"https://dns.toys/{query}"
     try:
-        result = subprocess.run(['dig', query, '@dns.toys', '+short'], stdout=subprocess.PIPE, text=True)
-        return result.stdout if result.stdout else "No data available for this query."
-    except Exception as e:
-        return f"Error: {str(e)}"
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an error for bad responses
+        return response.text
+    except requests.exceptions.RequestException as e:
+        return f"Error: {e}"
 
-# App Title
-st.title("Useful Utilities over DNS - Powered by dns.toys")
+# Streamlit app layout
+st.title("DNS Utilities App")
 
-# Sidebar with utility selection
-utility = st.sidebar.selectbox("Select Utility", [
-    "World Time", "Timezone Conversion", "Weather", 
-    "Unit Conversion", "Currency Conversion", 
-    "IP Echo", "Number to Words", "CIDR Range", 
-    "Number Base Conversion", "Pi", "Dictionary", 
-    "Rolling Dice", "Coin Toss", "Random Number", 
-    "Epoch Timestamp", "Aerial Distance", "UUID Generation"
-])
+# World Time
+st.header("World Time")
+city = st.text_input("Enter city name (e.g., mumbai) for world time:")
+if st.button("Get World Time"):
+    if city:
+        result = query_dns(f"{city}.time")
+        st.write(result)
 
-# World Time Utility
-if utility == "World Time":
-    city = st.text_input("Enter City (e.g., mumbai, newyork):")
-    if st.button("Get Time"):
-        if city:
-            output = run_dig(f"{city}.time")
-            st.code(output)
-        else:
-            st.warning("Please enter a city name.")
+# Weather
+st.header("Weather")
+city_weather = st.text_input("Enter city name (e.g., newyork) for weather:")
+if st.button("Get Weather"):
+    if city_weather:
+        result = query_dns(f"{city_weather}.weather")
+        st.write(result)
 
 # Timezone Conversion
-elif utility == "Timezone Conversion":
-    date_time = st.text_input("Enter Date and Time (YYYY-MM-DDTHH:MM):")
-    from_city = st.text_input("From City (e.g., mumbai):")
-    to_city = st.text_input("To City (e.g., paris/fr):")
-    if st.button("Convert Time"):
-        if date_time and from_city and to_city:
-            output = run_dig(f"{date_time}-{from_city}-{to_city}.time")
-            st.code(output)
-        else:
-            st.warning("Please enter all required fields.")
-
-# Weather Utility
-elif utility == "Weather":
-    city = st.text_input("Enter City (e.g., mumbai, amsterdam/nl):")
-    if st.button("Get Weather"):
-        if city:
-            output = run_dig(f"{city}.weather")
-            st.code(output)
-        else:
-            st.warning("Please enter a city name.")
+st.header("Timezone Conversion")
+date_time = st.text_input("Enter in format YYYY-MM-DDTHH:MM-fromCity-toCity:")
+if st.button("Convert Timezone"):
+    if date_time:
+        result = query_dns(f"{date_time}.time")
+        st.write(result)
 
 # Unit Conversion
-elif utility == "Unit Conversion":
-    value = st.number_input("Enter Value:", min_value=0.0)
-    from_unit = st.text_input("From Unit (e.g., km, GB):")
-    to_unit = st.text_input("To Unit (e.g., mi, MB):")
-    if st.button("Convert Unit"):
-        if value and from_unit and to_unit:
-            output = run_dig(f"{int(value)}{from_unit}-{to_unit}.unit")
-            st.code(output)
-        else:
-            st.warning("Please enter value and units.")
+st.header("Unit Conversion")
+value_unit = st.text_input("Enter in format ValueFromUnit-ToUnit (e.g., 42km-mi):")
+if st.button("Convert Unit"):
+    if value_unit:
+        result = query_dns(f"{value_unit}.unit")
+        st.write(result)
 
 # Currency Conversion
-elif utility == "Currency Conversion":
-    value = st.number_input("Enter Amount:", min_value=0.0)
-    from_currency = st.text_input("From Currency (e.g., USD, CAD):")
-    to_currency = st.text_input("To Currency (e.g., INR, AUD):")
-    if st.button("Convert Currency"):
-        if value and from_currency and to_currency:
-            output = run_dig(f"{int(value)}{from_currency}-{to_currency}.fx")
-            st.code(output)
-        else:
-            st.warning("Please enter amount and currencies.")
+st.header("Currency Conversion")
+currency_input = st.text_input("Enter in format ValueFromCurrency-ToCurrency (e.g., 100USD-INR):")
+if st.button("Convert Currency"):
+    if currency_input:
+        result = query_dns(f"{currency_input}.fx")
+        st.write(result)
 
 # IP Echo
-elif utility == "IP Echo":
-    ip_version = st.selectbox("Select IP Version", ['IPv4', 'IPv6'])
-    if st.button("Get IP Address"):
-        ip_flag = "-4" if ip_version == "IPv4" else "-6"
-        output = run_dig(f"{ip_flag} ip")
-        st.code(output)
+st.header("IP Echo")
+if st.button("Get IPv4 Address"):
+    result = query_dns("ip")
+    st.write(f"IPv4 Address: {result}")
+
+if st.button("Get IPv6 Address"):
+    result = query_dns("-6 ip")
+    st.write(f"IPv6 Address: {result}")
 
 # Number to Words
-elif utility == "Number to Words":
-    number = st.text_input("Enter Number (e.g., 987654321):")
-    if st.button("Convert to Words"):
-        if number.isdigit():
-            output = run_dig(f"{number}.words")
-            st.code(output)
-        else:
-            st.warning("Please enter a valid number.")
+st.header("Number to Words")
+number_input = st.text_input("Enter a number to convert to words:")
+if st.button("Convert Number to Words"):
+    if number_input:
+        result = query_dns(f"{number_input}.words")
+        st.write(result)
 
-# CIDR Range
-elif utility == "CIDR Range":
-    cidr = st.text_input("Enter CIDR (e.g., 10.0.0.0/24):")
-    if st.button("Get Usable Range"):
-        if cidr:
-            output = run_dig(f"{cidr}.cidr")
-            st.code(output)
-        else:
-            st.warning("Please enter a CIDR notation.")
-
-# Number Base Conversion
-elif utility == "Number Base Conversion":
-    number = st.text_input("Enter Number and Base (e.g., 100dec-hex):")
-    if st.button("Convert Base"):
-        if number:
-            output = run_dig(f"{number}.base")
-            st.code(output)
-        else:
-            st.warning("Please enter number and base conversion format.")
-
-# Pi
-elif utility == "Pi":
-    if st.button("Get Digits of Pi"):
-        output = run_dig("pi")
-        st.code(output)
-
-# Dictionary
-elif utility == "Dictionary":
-    word = st.text_input("Enter Word (e.g., fun, big-time):")
-    if st.button("Get Definition"):
-        if word:
-            output = run_dig(f"{word}.dict")
-            st.code(output)
-        else:
-            st.warning("Please enter a word.")
-
-# Rolling Dice
-elif utility == "Rolling Dice":
-    dice_roll = st.text_input("Enter Dice Roll (e.g., 1d6, 3d20/2):")
-    if st.button("Roll Dice"):
-        if dice_roll:
-            output = run_dig(f"{dice_roll}.dice")
-            st.code(output)
-        else:
-            st.warning("Please enter a valid dice roll format.")
-
-# Coin Toss
-elif utility == "Coin Toss":
-    number_of_coins = st.text_input("Enter Number of Coins (e.g., 2):")
-    if st.button("Toss Coin"):
-        if number_of_coins.isdigit():
-            output = run_dig(f"{number_of_coins}.coin")
-            st.code(output)
-        else:
-            st.warning("Please enter a valid number of coins.")
+# Usable CIDR Range
+st.header("Usable CIDR Range")
+cidr_input = st.text_input("Enter a CIDR notation (e.g., 10.0.0.0/24):")
+if st.button("Get Usable CIDR Range"):
+    if cidr_input:
+        result = query_dns(f"{cidr_input}.cidr")
+        st.write(result)
 
 # Random Number Generation
-elif utility == "Random Number":
-    range_input = st.text_input("Enter Range (e.g., 1-100):")
-    if st.button("Generate Random Number"):
-        if range_input:
-            output = run_dig(f"{range_input}.rand")
-            st.code(output)
-        else:
-            st.warning("Please enter a valid range.")
+st.header("Random Number Generation")
+random_input = st.text_input("Enter range for random number (e.g., 1-100):")
+if st.button("Generate Random Number"):
+    if random_input:
+        result = query_dns(f"{random_input}.rand")
+        st.write(result)
 
-# Epoch/Unix Timestamp Conversion
-elif utility == "Epoch Timestamp":
-    timestamp = st.text_input("Enter Epoch Timestamp (e.g., 784783800):")
-    if st.button("Convert to Date"):
-        if timestamp.isdigit():
-            output = run_dig(f"{timestamp}.epoch")
-            st.code(output)
-        else:
-            st.warning("Please enter a valid timestamp.")
+# Generate UUIDs
+st.header("Generate UUIDs")
+uuid_count = st.text_input("Enter number of UUIDs to generate (e.g., 5):")
+if st.button("Generate UUIDs"):
+    if uuid_count:
+        result = query_dns(f"{uuid_count}.uuid")
+        st.write(result)
 
-# Aerial Distance
-elif utility == "Aerial Distance":
-    coords = st.text_input("Enter Coordinates (e.g., A12.9352,77.6245/12.9698,77.7500):")
-    if st.button("Calculate Distance"):
-        if coords:
-            output = run_dig(f"{coords}.aerial")
-            st.code(output)
-        else:
-            st.warning("Please enter valid coordinates.")
+# Help Section
+st.header("Help")
+if st.button("List Available Services"):
+    result = query_dns("help")
+    st.write(result)
 
-# UUID Generation
-elif utility == "UUID Generation":
-    num_of_uuids = st.text_input("Enter Number of UUIDs (e.g., 5):")
-    if st.button("Generate UUIDs"):
-        if num_of_uuids.isdigit():
-            output = run_dig(f"{num_of_uuids}.uuid")
-            st.code(output)
-        else:
-            st.warning("Please enter a valid number.")
+# Footer
+st.markdown("""
+### Note:
+- For city names and other inputs, please ensure to follow the expected format.
+- This app queries the dns.toys API for various utilities.
+""")
