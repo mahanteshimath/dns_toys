@@ -1,5 +1,1 @@
 streamlit
-requests
-num2words
-pytz
-uuid
